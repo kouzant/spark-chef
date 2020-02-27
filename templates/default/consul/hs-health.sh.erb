@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+
+curl --fail http://$HOSTNAME:<%= node['hadoop_spark']['historyserver']['port']%>/api/v1/applications?limit=0 > /dev/null 2>&1

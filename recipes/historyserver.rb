@@ -1,7 +1,4 @@
 
-my_ip = my_private_ip()
-my_public_ip = my_public_ip()
-
 eventlog_dir = "#{node['hops']['hdfs']['user_home']}/#{node['hadoop_spark']['user']}/applicationHistory"
 tmp_dirs   = ["#{node['hops']['hdfs']['user_home']}/#{node['hadoop_spark']['user']}", eventlog_dir ]
 for d in tmp_dirs
@@ -79,7 +76,6 @@ else #sysv
 
 end
 
-
 if node['kagent']['enabled'] == "true"
    kagent_config service_name do
      service "HISTORY_SERVERS"
@@ -87,3 +83,15 @@ if node['kagent']['enabled'] == "true"
    end
 end
 
+# Register Spark History server with Consul
+template "#{node['hadoop_spark']['base_dir']}/bin/hs-health.sh" do
+  source "consul/hs-health.sh.erb"
+  owner node['hadoop_spark']['user']
+  group node['hops']['group']
+  mode 0750
+end
+
+consul_service "Registering Spark History Server with Consul" do
+  service_definition "consul/spark-hs-consul.hcl.erb"
+  action :register
+end

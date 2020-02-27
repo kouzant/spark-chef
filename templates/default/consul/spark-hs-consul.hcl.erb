@@ -1,0 +1,18 @@
+services = [
+    {
+        id = "sparkhistoryserver"
+        name = "sparkhistoryserver"
+        tags = [
+            "spark",
+            "historyserver"
+        ]
+        port = <%= node['hadoop_spark']['historyserver']['port'] %>
+        check = {
+            id = "spark-hs-health-check"
+            name = "Health check for Spark History Server"
+            args = ["<%= node['hadoop_spark']['base_dir'] %>/bin/hs-health.sh"]
+            interval = "10s"
+            timeout = "5s"
+        }
+    }
+]

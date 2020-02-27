@@ -204,20 +204,13 @@ template"#{node['hadoop_spark']['conf_dir']}/executor-log4j.properties" do
   mode 0655
 end
 
-
-my_ip = my_private_ip()
+if node['install']['cloud'].strip.empty?
+  my_ip = my_private_ip()
+else
+  my_ip = "0.0.0.0"
+end
 
 master_ip = "yarn"
-
-begin
-  namenode_ip = private_recipe_ip("hops","nn")
-rescue
-  begin
-    namenode_ip = private_recipe_ip("hops","nn")
-  rescue
-    namenode_ip = my_private_ip()
-  end
-end
 
 template"#{node['hadoop_spark']['home']}/conf/spark-env.sh" do
   source "spark-env.sh.erb"
@@ -233,11 +226,8 @@ end
 
 eventlog_dir = "#{node['hops']['hdfs']['user_home']}/#{node['hadoop_spark']['user']}/applicationHistory"
 
-begin
-  historyserver_ip = private_recipe_ip("hadoop_spark","historyserver")
-rescue
-  historyserver_ip = my_private_ip()
-end
+namenode_fqdn = consul_helper.get_service_fqdn("namenode")
+history_server_fqdn = consul_helper.get_service_fqdn("sparkhistoryserver")
 
 template"#{node['hadoop_spark']['home']}/conf/spark-defaults.conf" do
   source "spark-defaults.conf.erb"
@@ -247,10 +237,10 @@ template"#{node['hadoop_spark']['home']}/conf/spark-defaults.conf" do
   variables({
         :private_ip => my_ip,
         :master_ip => master_ip,
-        :namenode_ip => namenode_ip,
+        :namenode_fqdn => namenode_fqdn,
         :yarn => node['hadoop_spark']['yarn']['support'],
         :eventlog_dir => eventlog_dir,
-        :historyserver_ip => historyserver_ip
+        :history_server_fqdn => history_server_fqdn
            })
 end
 
@@ -265,7 +255,7 @@ magic_shell_environment 'SPARK_HOME' do
   value node['hadoop_spark']['base_dir']
 end
 
-nn_endpoint = private_recipe_ip("hops", "nn") + ":#{node['hops']['nn']['port']}"
+nn_endpoint = "#{namenode_fqdn}:#{node['hops']['nn']['port']}"
 begin
   metastore_ip = private_recipe_ip("hive2", "metastore")
 rescue
